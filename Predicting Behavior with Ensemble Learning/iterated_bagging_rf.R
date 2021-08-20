@@ -12,68 +12,68 @@ library(randomForest)
 
 # Define our bagging classifier.
 my_bagging <- function(theFormula, data, ntrees = 10){
-  
+
   N <- nrow(data)
-  
+
   # A list to store the individual trees
   models <- list()
-  
+
   # Train individual trees and add each to 'models' list.
   for(i in 1:ntrees){
-    
+
     # Bootstrap instances from data.
     idxs <- sample(1:N, size = N, replace = T)
-    
+
     bootstrappedInstances <- data[idxs,]
-    
+
     treeModel <- rpart(as.formula(theFormula),
                        bootstrappedInstances,
                        xval = 0,
                        cp = 0)
-    
+
     models <- c(models, list(treeModel))
   }
-  
+
   res <- structure(list(models = models), class = "my_bagging")
-  
+
   return(res)
 }
 
 # Define the predict function for my_bagging
 predict.my_bagging <- function(object, newdata){
-  
+
   ntrees <- length(object$models)
   N <- nrow(newdata)
-  
+
   # Matrix to store predictions for each instance
   # in newdata and for each tree.
   M <- matrix(data = rep("",N * ntrees), nrow = N)
-  
+
   # Populate matrix.
   # Each column of M contains all predictions for a given tree.
   # Each row contains the predictions for a given instance.
   for(i in 1:ntrees){
-    
+
     m <- object$models[[i]]
-    
+
     tmp <- as.character(predict(m, newdata, type = "class"))
-    
+
     M[,i] <- tmp
   }
-  
+
   # Final predictions
   predictions <- character()
-  
+
   # Iterate through each row of M.
   for(i in 1:N){
-    
+
     # Compute class counts
     classCounts <- table(M[i,])
-    
+
     # Get the class with the most counts.
     predictions <- c(predictions, names(classCounts)[which.max(classCounts)])
   }
-  
+
   return(predictions)
 }
 
@@ -108,42 +108,42 @@ accuracies.rf <- NULL
 for(nt in 1:50){
 
   print(paste0("Evaluating with ", nt, " trees."))
-  
+
   # Variable to store ground truth classes.
   groundTruth <- NULL
-  
+
   # Variable to store the classifier's predictions.
   predictions.bagging <- NULL
-  
+
   predictions.rf <- NULL
-  
+
   for(i in 1:k){
-    
+
     trainSet <- df[which(folds != i), ]
     testSet <- df[which(folds == i), ]
-    
+
     treeClassifier <- my_bagging(class ~ ., trainSet, ntree = nt)
-    
+
     foldPredictions <- predict(treeClassifier, testSet)
-    
+
     predictions.bagging <- c(predictions.bagging, as.character(foldPredictions))
-    
+
     # RF predictions
     rf <- randomForest(class ~ ., trainSet, ntree = nt)
-    
+
     foldPredictions <- predict(rf, testSet)
-    
+
     predictions.rf <- c(predictions.rf, as.character(foldPredictions))
-    
+
     groundTruth <- c(groundTruth, as.character(testSet$class))
   }
-  
+
   cm <- confusionMatrix(as.factor(predictions.bagging), as.factor(groundTruth))
-  
+
   cm.rf <- confusionMatrix(as.factor(predictions.rf), as.factor(groundTruth))
-  
+
   accuracies.bagging <- c(accuracies.bagging, cm$overall["Accuracy"])
-  
+
   accuracies.rf <- c(accuracies.rf, cm.rf$overall["Accuracy"])
 }
 
@@ -157,7 +157,7 @@ acc.plot <- ggplot(data=tmp,
                    aes(x = ntrees, y = accuracy,
                    colour = type, group = type,
                    linetype = type)) +
-  ggtitle("Bagging v.s RF test accuracy") + xlab("# trees") + ylab("Accuracy") +
+  ggtitle("Bagging vs. RF test accuracy") + xlab("# trees") + ylab("Accuracy") +
   scale_linetype_manual(values=c("dotted", "solid"), name = "") +
   scale_color_manual(values=c("black","black"), name = "") +
   geom_line(aes(color=type), size=0.6) +

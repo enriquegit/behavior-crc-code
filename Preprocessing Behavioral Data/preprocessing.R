@@ -60,35 +60,35 @@ summary(imp_df)
 
 movingAvg <- function(x, w = 5){
   # Applies moving average to x with a window of size w.
-  
+
   n <- length(x) # Total number of points.
-  
+
   smoothedX <- rep(NA, n)
-  
+
   for(i in 1:(n-w+1)){
     smoothedX[i] <- mean(x[i:(i-1+w)])
   }
-  
+
   return(smoothedX)
 }
 
 movingAvgCent <- function(x, w = 5){
   # Applies centered moving average to x with a window of size w.
-  
+
   if(w %% 2 == 0){
     stop("w must be an odd number.")
   }
-  
+
   n <- length(x) # Total number of points.
-  
+
   smoothedX <- rep(NA, n)
-  
+
   sidePoints <- (w-1) / 2 # Number of points on each side.
-  
+
   for(i in (sidePoints+1):(n-sidePoints)){
     smoothedX[i-sidePoints-1] <- mean(x[(i-sidePoints):(i+sidePoints)])
   }
-  
+
   return(smoothedX)
 }
 
@@ -134,7 +134,7 @@ tsPlot <- ggplot(data = df,
                      y = values,
                      colour = type,
                      linetype = type)) +
-  ggtitle("Original v.s. Smoothed timeseries.") +
+  ggtitle("Original vs. Smoothed timeseries.") +
   xlab("Timestep") +
   ylab("Acceleration in X") +
   geom_line(aes(color=type)) +
@@ -175,45 +175,45 @@ testset <- dataset[folds == 2,]
 # Define a function to normalize the train and test set
 # based on the parameters learned from the train set.
 normalize <- function(trainset, testset){
-  
+
   # Iterate columns
   for(i in 1:ncol(trainset)){
-    
+
     c <- trainset[,i] # trainset column
     c2 <- testset[,i] # testset column
-    
+
     # Skip if the variable is not numeric or integer.
     if(class(c) != "numeric" && class(c) != "integer")next;
-    
+
     max <- max(c, na.rm = T) # Learn the max value from the trainset's column.
     min <- min(c, na.rm = T) # Learn the min value from the trainset's column.
-    
+
     if(max==min){ # If all values are the same set it to max.
       trainset[,i] <- max
       testset[,i] <- max
     }
     else{
-      
+
       # Normalize trainset's column.
       trainset[,i] <- (c - min) / (max - min)
-      
+
       # Truncate max values in testset.
       idxs <- which(c2 > max)
       if(length(idxs) > 0){
         c2[idxs] <- max
       }
-      
+
       # Truncate min values in testset.
       idxs <- which(c2 < min)
       if(length(idxs) > 0){
         c2[idxs] <- min
       }
-      
+
       # Normalize testset's column.
       testset[,i] <- (c2 - min) / (max - min)
     }
   }
-  
+
   return(list(train=trainset, test=testset))
 }
 
